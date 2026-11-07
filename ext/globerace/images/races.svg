@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" color="#fff" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <!-- A clock face with its hand turned back: the races of the past -->
+  <path d="M4 12a8 8 0 1 0 2.4-5.7"/>
+  <path d="M4 4.500v3.500h3.500"/>
+  <path d="M12 8v4l2.800 1.800"/>
+</svg>

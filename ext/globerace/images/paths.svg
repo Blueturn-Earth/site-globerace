@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" color="#fff" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <!-- A winding track with a dot at each end: where a boat started, and where it is -->
+  <path d="M5 19C11 20 4 12 11 11S18 9 17 6"/>
+  <circle cx="5" cy="19" r="1.600" fill="currentColor" stroke="none"/>
+  <circle cx="17.500" cy="5.500" r="2" fill="currentColor" stroke="none"/>
+</svg>
