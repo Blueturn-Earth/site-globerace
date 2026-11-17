@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" color="#fff" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <!-- A black-and-white checkerboard: the starting line -->
+  <rect x="4" y="4" width="16" height="16"/>
+  <path d="M4 9.333H20M4 14.667H20M9.333 4V20M14.667 4V20" stroke-width="1"/>
+  <path d="M4 4H9.333V9.333H4ZM14.667 4H20V9.333H14.667ZM9.333 9.333H14.667V14.667H9.333ZM4 14.667H9.333V20H4ZM14.667 14.667H20V20H14.667Z" fill="currentColor" stroke="none"/>
+</svg>

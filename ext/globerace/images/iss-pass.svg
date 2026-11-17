@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" color="#fff" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Back to the last time the ISS passed over the leaders: a small station, and an arrow back along its track -->
+  <rect x="8" y="3" width="3.500" height="6" rx="0.800"/>
+  <rect x="16.500" y="3" width="3.500" height="6" rx="0.800"/>
+  <path d="M11.500 6h5"/>
+  <path d="M21 17H5"/>
+  <path d="M9 13l-4 4 4 4"/>
+</svg>

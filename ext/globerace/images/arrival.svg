@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" color="#fff" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <!-- A chequered flag on its pole: the finish -->
+  <path d="M5 21V3"/>
+  <rect x="5" y="4" width="14" height="10.500"/>
+  <path d="M5 8H19M5 11.500H19M9.500 4V14.500M14 4V14.500" stroke-width="1"/>
+  <path d="M5 4H9.500V8H5ZM14 4H19V8H14ZM9.500 8H14V11.500H9.500ZM5 11.500H9.500V14.500H5ZM14 11.500H19V14.500H14Z" fill="currentColor" stroke="none"/>
+</svg>

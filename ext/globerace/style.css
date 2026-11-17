@@ -1,0 +1,657 @@
+/* Globe Race extension (ext/globerace): the boats and their paths over the globe. */
+
+#raceOverlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 16;
+  overflow: hidden;
+  /* Nothing here is a target: every press, drag and wheel reaches the globe. */
+  pointer-events: none;
+}
+
+#raceOverlay.is-active {
+  display: block;
+}
+
+#raceSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* --race-color is set on each element from the boat's color. */
+.race-path {
+  fill: none;
+  stroke: var(--race-color);
+  stroke-width: 2;
+  stroke-opacity: 0.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.race-boat {
+  fill: var(--race-color);
+  stroke: rgba(0, 0, 0, 0.75);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+/* The boat on air (its video is on): the stretch of its path sailed since its broadcast began, thick with a white halo, and its arrow outlined. */
+.race-path-live {
+  fill: none;
+  stroke: var(--race-color);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 4px rgba(255, 255, 255, 0.6));
+}
+
+.race-boat.is-onair {
+  stroke: #fff;
+  stroke-width: 2;
+  fill-opacity: 1;
+}
+
+/* Out of the race: still where it stopped, but not under sail. */
+.race-path.is-retired {
+  stroke-opacity: 0.45;
+}
+
+.race-boat.is-retired {
+  fill-opacity: 0.5;
+}
+
+/* The boat under the mouse, or picked by a click or a tap: wider path, white outline on the arrow. */
+.race-path.is-selected {
+  stroke-width: 3.5;
+  stroke-opacity: 1;
+}
+
+.race-boat.is-selected {
+  stroke: #fff;
+  stroke-width: 1.5;
+  fill-opacity: 1;
+}
+
+/* A boat's label: its name, and what else is known of it. Placed by script (transform), in the color of the boat. */
+.race-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: min(240px, 80%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--race-color, #fff);
+  color: #fff;
+  font: 600 12px/1.25 system-ui, sans-serif;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.race-label[hidden],
+.race-label-sub[hidden] {
+  display: none;
+}
+
+/* The boat on air: "on air" in red under its name. */
+.race-label.is-onair .race-label-sub {
+  color: #ff6b6b;
+  font-weight: 700;
+  opacity: 1;
+}
+
+.race-label-name {
+  font-weight: 700;
+}
+
+.race-label-sub {
+  font-weight: 500;
+  opacity: 0.8;
+  text-transform: capitalize;
+}
+
+/* The corner buttons, in the menu corner column under the extension toggle (paths, skippers, live video): lit while their feature is on. */
+.race-corner-toggle {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  /* Round and 34 px like the Sun, target and eye buttons. */
+  border-radius: 50%;
+  cursor: pointer;
+  color: #cfe6ff;
+  background: rgba(20, 28, 40, 0.75);
+  border: 1px solid rgba(160, 200, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+.race-corner-toggle[hidden],
+body.bt-split-earth-hidden .race-corner-toggle {
+  display: none;
+}
+
+.race-corner-toggle:hover,
+.race-corner-toggle:focus-visible {
+  background: rgba(30, 48, 72, 0.95);
+  border-color: rgba(200, 225, 255, 0.9);
+}
+
+.race-corner-toggle.is-on {
+  color: #ffd630;
+  background: rgba(150, 110, 0, 0.55);
+  border-color: rgba(255, 214, 48, 0.9);
+}
+
+.race-corner-toggle svg {
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+}
+
+/* A corner menu's panel (ext/globerace/corner_menu.js), beside the button that opens it (placed by script). */
+.race-menu {
+  position: fixed;
+  z-index: calc(var(--z-overlay-menu-corner, 20) + 1);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 4px;
+  border-radius: 8px;
+  background: rgba(20, 28, 40, 0.92);
+  border: 1px solid rgba(160, 200, 255, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font: 500 13px/1.25 system-ui, sans-serif;
+  overscroll-behavior: contain;
+}
+
+.race-menu[hidden],
+.race-skippers-empty[hidden] {
+  display: none;
+}
+
+/* The skippers menu (ext/globerace/skippers_menu.js): the boats in their order in the race. */
+.race-skippers {
+  width: min(280px, calc(100vw - 80px));
+}
+
+/* The paths menu (ext/globerace/paths_menu.js): how much of each path is drawn. */
+.race-paths-menu {
+  min-width: 130px;
+}
+
+/* The row level with the menu button and right next to it (the paths button), as the ISS keeps its target (ext/iss/style.css .iss-row). */
+.race-menu-row {
+  /* The hamburger's edge: its 8 px padding, 40 px and a gap. Not `--menu-corner-size`, which is the width of the whole menu column and grows with the skippers pill under it. */
+  --race-menu-btn-edge: 56px;
+  position: fixed;
+  top: 11px;
+  right: var(--race-menu-btn-edge);
+  z-index: var(--z-overlay-menu-corner, 20);
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 8px;
+  /* Scaled with the UI like the menu button it sits beside (compact embeds), its offsets with it. */
+  zoom: var(--bt-ui-scale, 1);
+}
+
+body:has(#appMenu.menu-corner-left) .race-menu-row {
+  right: auto;
+  left: var(--race-menu-btn-edge);
+  flex-direction: row;
+}
+
+/* The video pane is on the menu's side (`bt-split-at-menu`): the menu column, and the row with it, moves in to the split line. */
+body.bt-split-row.bt-split-at-menu .race-menu-row {
+  right: calc(var(--bt-split, 0) * 100% + var(--race-menu-btn-edge));
+}
+
+body.bt-split-row.bt-split-at-menu:has(#appMenu.menu-corner-left) .race-menu-row {
+  right: auto;
+  left: calc(var(--bt-split, 0) * 100% + var(--race-menu-btn-edge));
+}
+
+/* The video pane is at the top: the row goes down with the menu, to the Earth half. */
+body.bt-split-col.bt-split-top .race-menu-row {
+  top: calc(var(--bt-split-start, 0) * 100% + 11px);
+}
+
+body.bt-split-earth-hidden .race-menu-row {
+  display: none;
+}
+
+.race-option {
+  all: unset;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: manipulation;
+}
+
+.race-option:hover,
+.race-option:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.race-option.is-selected {
+  background: rgba(255, 214, 48, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 214, 48, 0.8);
+}
+
+.race-skippers-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.race-skippers-empty {
+  padding: 8px;
+  opacity: 0.75;
+}
+
+.race-skipper {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.race-skipper:hover,
+.race-skipper:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.race-skipper.is-selected {
+  background: rgba(255, 214, 48, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 214, 48, 0.8);
+}
+
+.race-skipper.is-retired {
+  opacity: 0.6;
+}
+
+.race-skipper-rank {
+  flex: none;
+  min-width: 1.6em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.race-skipper-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--race-color, #fff);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+.race-skipper-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.race-skipper-sub {
+  flex: none;
+  font-size: 11px;
+  opacity: 0.7;
+  text-transform: capitalize;
+}
+
+/* The live video's stage in the split pane (ext/globerace/video.js; core's `.bt-live-split-stage` fills it): the buttons over the pane's corner sit at its top. */
+.race-split-stage .bt-split-bar {
+  top: 8px;
+}
+
+/* The top bar (ext/globerace/top_bar.js), opposite the menu corner. */
+.race-top-bar {
+  --race-bar-inset: 8px;
+  --race-bar-split: 0px;
+  position: fixed;
+  top: 8px;
+  left: calc(var(--race-bar-split) + var(--race-bar-inset));
+  right: auto;
+  z-index: var(--z-overlay-menu-corner, 20);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+/* Like the core's opposite-top chrome: clear of a vertical timeline, and inside the globe half of a split. */
+body.timeline-vertical .race-top-bar {
+  --race-bar-inset: calc(var(--timeline-interior-inset, 172px) / var(--bt-ui-scale, 1) + 8px);
+}
+
+body.bt-split-row.bt-split-flip .race-top-bar {
+  --race-bar-split: calc(var(--bt-split, 0) * 100%);
+}
+
+body.bt-split-col.bt-split-top .race-top-bar {
+  top: calc(var(--bt-split-start, 0) * 100% + 8px);
+}
+
+/* The menu on the left: the bar is at the right. */
+body:has(#appMenu.menu-corner-left) .race-top-bar {
+  left: auto;
+  right: calc(var(--race-bar-split) + var(--race-bar-inset));
+}
+
+body.bt-split-row:not(.bt-split-flip):has(#appMenu.menu-corner-left) .race-top-bar {
+  --race-bar-split: calc(var(--bt-split, 0) * 100%);
+}
+
+body.bt-split-row.bt-split-flip:has(#appMenu.menu-corner-left) .race-top-bar {
+  --race-bar-split: 0px;
+}
+
+body.bt-split-earth-hidden .race-top-bar {
+  display: none;
+}
+
+.race-corner-toggle.race-pill {
+  width: auto;
+  max-width: 200px;
+  border-radius: 17px;
+  padding: 0 10px 0 6px;
+  gap: 6px;
+  font: 600 13px/1 system-ui, sans-serif;
+}
+
+.race-pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.race-skippers-all {
+  display: block;
+  font-weight: 700;
+}
+
+.race-pill-icon {
+  display: flex;
+  flex: none;
+}
+
+/* No Back / Forth buttons: Back, Escape and a double-click while zoomed bring the race home (ext/globerace/reset_view.js). */
+body.globerace-on .selection-nav {
+  display: none !important;
+}
+
+/* The view label ("Zoomed in Atlantic") in the top row of the globe half, between the left buttons (the Sun button, 40 px) and the menu corner: it wraps onto a
+   second line when it is long. In a split the row is the globe's, not the screen's: --race-label-pane-left / -right are the width of the video pane at that
+   edge of the screen (the share of the screen `--bt-split` is), so the label stays out of the pane, like the top bar (`.race-top-bar`). */
+body.globerace-on #selection-time-text {
+  --race-label-pane-left: 0px;
+  --race-label-pane-right: 0px;
+  --race-label-top: 8px;
+  /* The Sun view button (the centroid mode button is under it), in a 40 px slot: the label starts after it. */
+  --race-left-buttons: 40px;
+  position: fixed;
+  top: var(--race-label-top);
+  min-height: 40px;
+  left: calc(var(--race-label-pane-left) + var(--race-bar-inset, 8px) + var(--race-left-buttons) + 8px);
+  right: calc(var(--race-label-pane-right) + max(var(--menu-corner-size, 56px), 98px) + 8px);
+  width: auto;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+body.globerace-on.timeline-vertical #selection-time-text {
+  --race-bar-inset: calc(var(--timeline-interior-inset, 172px) / var(--bt-ui-scale, 1) + 8px);
+}
+
+/* Side by side: the pane is at the left of the screen (flipped) or at its right. */
+body.globerace-on.bt-split-row.bt-split-flip #selection-time-text {
+  --race-label-pane-left: calc(var(--bt-split, 0) * 100%);
+}
+
+body.globerace-on.bt-split-row:not(.bt-split-flip) #selection-time-text {
+  --race-label-pane-right: calc(var(--bt-split, 0) * 100%);
+}
+
+/* Stacked, the pane at the top: the row is the globe's, under it. */
+body.globerace-on.bt-split-col.bt-split-top #selection-time-text {
+  --race-label-top: calc(var(--bt-split-start, 0) * 100% + 8px);
+}
+
+/* The menu on the left: the bar is at the right, and the label runs from the menu to it. */
+body.globerace-on:has(#appMenu.menu-corner-left) #selection-time-text {
+  left: calc(var(--race-label-pane-left) + max(var(--menu-corner-size, 56px), 98px) + 8px);
+  right: calc(var(--race-label-pane-right) + var(--race-bar-inset, 8px) + var(--race-left-buttons) + 8px);
+}
+
+/* The ISS view (ext/globerace/iss_view/): the second half of the video pane. Its box fills the half the media layout gives it; the stage in it is core's. */
+.race-iss-host {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+/* A word over the ISS video: why the clock did not go to a last pass. */
+.race-iss-note {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #f4f4f4;
+  font: 13px / 1.35 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* The ISS on the globe (ext/globerace/iss_view/globe_layer.js): the station, its orbit and its two cameras' frustums, as ISS draws them (ext/iss/style.css).
+   Nothing here is a target: every press, drag and wheel reaches the globe. */
+#raceIssOverlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 17;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#raceIssOverlay.is-active {
+  display: block;
+}
+
+#raceIssSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.race-iss-orbit {
+  fill: none;
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.race-iss-orbit--ahead {
+  stroke-width: 1.6;
+  stroke-opacity: 0.35;
+}
+
+.race-iss-orbit--behind {
+  stroke-width: 1.2;
+  stroke-opacity: 0.8;
+}
+
+/* Dotted: the camera's whole picture. Plain: the part the ISS video shows (cropped video). */
+.race-iss-frustum-edges,
+.race-iss-front-edges {
+  fill: none;
+  stroke: #ffd36a;
+  stroke-width: 1.1;
+  stroke-opacity: 0.6;
+  stroke-dasharray: 2 4;
+  stroke-linejoin: round;
+}
+
+.race-iss-frustum-crop-edges,
+.race-iss-front-crop-edges {
+  fill: none;
+  stroke: #ffd36a;
+  stroke-width: 1.1;
+  stroke-opacity: 0.8;
+  stroke-linejoin: round;
+}
+
+.race-iss-frustum-fill {
+  fill: #ffd36a;
+  fill-opacity: 0.16;
+  stroke: none;
+}
+
+/* The front camera's frustum is pale magenta. */
+.race-iss-front-edges,
+.race-iss-front-crop-edges {
+  stroke: #ffb3e6;
+}
+
+.race-iss-marker-glow {
+  fill: #ffd36a;
+  fill-opacity: 0.25;
+}
+
+.race-iss-marker-panel {
+  fill: #e0a526;
+  stroke: #fff;
+  stroke-width: 0.8;
+}
+
+.race-iss-marker-truss {
+  stroke: #fff;
+  stroke-width: 1.4;
+}
+
+.race-iss-marker-core {
+  fill: #fff;
+}
+
+/* The ISS button in the video's bar (iss_view/iss_button.js): yellow fill while the ISS view is on, like the gyro button's. */
+.bt-split-btn.race-iss-toggle {
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+}
+
+.bt-split-btn.race-iss-toggle.is-on {
+  background: rgba(255, 179, 0, 0.75);
+  border-color: rgba(255, 255, 255, 0.85);
+}
+
+/* What the ISS can see: the ground where it stands on the horizon (dotted, as in ISS). */
+.race-iss-horizon {
+  fill: none;
+  stroke: #ffd36a;
+  stroke-width: 1.2;
+  stroke-opacity: 0.6;
+  stroke-dasharray: 5 4;
+  stroke-linejoin: round;
+}
+
+/* The arrival button: above the Go Live button of the timeline's controls row, in a stack with it. */
+.race-arrival-stack {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+}
+
+.race-arrival-btn {
+  all: unset;
+  box-sizing: border-box;
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  color: #cfe6ff;
+  background: rgba(20, 28, 40, 0.75);
+  border: 1px solid rgba(160, 200, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+/* The title of the video of a start or a finish, at the top of the video. */
+.race-video-title {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  padding: 6px 10px;
+  font: 600 13px/1.25 system-ui, sans-serif;
+  color: #fff;
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+  pointer-events: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The start button: one above the arrival button. */
+.race-start-btn {
+  bottom: calc(100% + 50px);
+}
+
+.race-arrival-btn:hover,
+.race-arrival-btn:focus-visible {
+  background: rgba(30, 48, 72, 0.95);
+  border-color: rgba(200, 225, 255, 0.9);
+}
+
+.race-arrival-btn svg {
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+}
